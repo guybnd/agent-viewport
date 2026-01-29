@@ -1,7 +1,7 @@
 
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 const CONFIG_DIR = path.join(os.homedir(), 'AppData', 'Roaming', 'AgentViewport');
 const CONFIG_PATH = path.join(CONFIG_DIR, 'agent-viewport.config.json');
@@ -9,30 +9,39 @@ const CONFIG_PATH = path.join(CONFIG_DIR, 'agent-viewport.config.json');
 const DEFAULTS = {
     port: 3000,
     targetWidth: 2560,
-    jpegQuality: 70,
     fps: 10,
+    jpegQuality: 70,
     safetyModeHotkey: 'Ctrl+Alt+S'
 };
 
-export function loadConfig() {
+function loadConfig() {
+    if (!fs.existsSync(CONFIG_DIR)) {
+        fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    }
+
+    let config = { ...DEFAULTS };
+    if (fs.existsSync(CONFIG_PATH)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+            config = { ...config, ...data };
+        } catch (e) {
+            console.error('Error loading config, using defaults:', e);
+        }
+    } else {
+        saveConfig(config);
+    }
+
+    config.configPath = CONFIG_PATH;
+    return config;
+}
+
+function saveConfig(config) {
     try {
-        if (!fs.existsSync(CONFIG_DIR)) {
-            fs.mkdirSync(CONFIG_DIR, { recursive: true });
-        }
-
-        if (!fs.existsSync(CONFIG_PATH)) {
-            fs.writeFileSync(CONFIG_PATH, JSON.stringify(DEFAULTS, null, 2));
-            return DEFAULTS;
-        }
-
-        const data = fs.readFileSync(CONFIG_PATH, 'utf8');
-        return { ...DEFAULTS, ...JSON.parse(data) };
-    } catch (error) {
-        console.error("Failed to load config:", error);
-        return DEFAULTS;
+        const { configPath, ...data } = config;
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(data, null, 4));
+    } catch (e) {
+        console.error('Error saving config:', e);
     }
 }
 
-export function getConfigPath() {
-    return CONFIG_PATH;
-}
+module.exports = { loadConfig, saveConfig };

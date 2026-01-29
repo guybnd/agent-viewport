@@ -1,14 +1,27 @@
 
-import SysTray from 'systray2';
-import open from 'open';
-import { uIOhook, UiohookKey } from 'uiohook-napi';
-import fs from 'fs';
-import path from 'path';
+const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
 
-export class TrayManager {
-    constructor(config, onExit) {
+// Helpers for packaged environment
+const req = (name) => {
+    if (process.pkg) return eval('require')(name);
+    return require(name);
+};
+
+const SysTray = req('systray2').default;
+
+// Native open URL function (replaces ESM-only 'open' package)
+function openUrl(url) {
+    spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' });
+}
+
+class TrayManager {
+    constructor(config, onExit, uiohook_mod) {
         this.config = config;
         this.onExit = onExit;
+        this.uiohook = uiohook_mod.uIOhook;
+        this.UiohookKey = uiohook_mod.UiohookKey;
         this.tray = null;
     }
 
@@ -36,15 +49,20 @@ export class TrayManager {
 
         let iconBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='; // Default Red Dot
         try {
-            const iconPath = path.join(process.cwd(), 'icon.png');
+            const iconPath = path.join(path.dirname(process.execPath), 'icon.png');
             if (fs.existsSync(iconPath)) {
                 iconBase64 = fs.readFileSync(iconPath).toString('base64');
+            } else {
+                const fallbackPath = path.join(process.cwd(), 'icon.png');
+                if (fs.existsSync(fallbackPath)) {
+                    iconBase64 = fs.readFileSync(fallbackPath).toString('base64');
+                }
             }
         } catch (e) {
             console.error("Failed to load icon.png, using default.", e);
         }
 
-        this.tray = new SysTray.default({
+        this.tray = new SysTray({
             menu: {
                 icon: iconBase64,
                 title: "AgentViewport",
@@ -57,11 +75,10 @@ export class TrayManager {
 
         this.tray.onClick(action => {
             if (action.item.title === 'Launch Viewport') {
-                open(`http://localhost:${this.config.port}`);
+                openUrl(`http://localhost:${this.config.port}`);
             } else if (action.item.title === 'Copy Config Path') {
-                import('child_process').then(cp => {
-                    cp.spawn('clip').stdin.end(this.config.configPath);
-                });
+                const cp = req('child_process');
+                cp.spawn('clip').stdin.end(this.config.configPath);
             } else if (action.item.title === 'Exit') {
                 this.shutdown();
             }
@@ -71,24 +88,21 @@ export class TrayManager {
     }
 
     setupSafetyHotkey() {
-        // hardcoded safety mode for now: Ctrl+Alt+S
-        // uiohook codes: Ctrl=29, Alt=56, S=31 (Scan codes vary, need to be careful).
-        // UiohookKey enums are safer.
-
-        uIOhook.on('keydown', (e) => {
-            if (e.ctrlKey && e.altKey && e.keycode === UiohookKey.S) {
+        this.uiohook.on('keydown', (e) => {
+            if (e.ctrlKey && e.altKey && e.keycode === this.UiohookKey.S) {
                 console.error("SAFETY KILL SWITCH ACTIVATED");
                 this.shutdown();
             }
         });
-        // uIOhook.start(); // Temporarily disabled: causing input blocking on some Windows systems
         console.log("Safety Mode Hotkey (Ctrl+Alt+S) disabled temporarily due to input blocking.");
     }
 
     shutdown() {
         if (this.tray) this.tray.kill();
-        uIOhook.stop();
+        this.uiohook.stop();
         if (this.onExit) this.onExit();
         process.exit(0);
     }
 }
+
+module.exports = { TrayManager };

@@ -1,156 +1,144 @@
 
-import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import screenshot from 'screenshot-desktop';
-import sharp from 'sharp';
-import robot from '@hurdlegroup/robotjs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+const path = require('path');
+const fs = require('fs');
 
-import { loadConfig, getConfigPath } from './src/config.js';
-import { AgentViewportMCPServer } from './src/mcp.js';
-import { TrayManager } from './src/tray.js';
+// VERY IMPORTANT: Setup external module paths globally
+if (process.pkg) {
+    const vendorPath = path.join(path.dirname(process.execPath), 'vendor');
+    // Set NODE_PATH and re-init module paths
+    process.env.NODE_PATH = vendorPath;
+    require('module').Module._initPaths();
+}
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// eval('require') pattern to ensure pkg doesn't try to bundle these
+const req = (name) => eval('require')(name);
+
+const express = req('express');
+const { createServer } = req('http');
+const { Server } = req('socket.io');
+const screenshot = req('screenshot-desktop');
+const sharp = req('sharp');
+const robot = req('@hurdlegroup/robotjs');
+const uiohook_mod = req('uiohook-napi');
+
+const { uIOhook, UiohookKey } = uiohook_mod;
+
+const { loadConfig } = require('./src/config.js');
+const { AgentViewportMCPServer } = require('./src/mcp.js');
+const { TrayManager } = require('./src/tray.js');
 
 class AgentViewportServer {
     constructor() {
         this.config = loadConfig();
-        // Inject config path for tray to use
-        this.config.configPath = getConfigPath();
-
         this.app = express();
         this.httpServer = createServer(this.app);
         this.io = new Server(this.httpServer);
-
-        this.mcpServer = new AgentViewportMCPServer(this.config);
-        this.trayManager = new TrayManager(this.config, () => this.stop());
-
-        this.isStreaming = false;
-        this.screenWidth = 0;
-        this.screenHeight = 0;
+        this.mcpServer = new AgentViewportMCPServer(this);
+        this.trayManager = new TrayManager(this.config, () => this.stop(), uiohook_mod);
 
         this.setupExpress();
         this.setupSocketIO();
-        this.updateScreenMetrics();
     }
 
     setupExpress() {
         this.app.use(express.static(path.join(__dirname, 'public')));
     }
 
-    updateScreenMetrics() {
-        try {
-            const size = robot.getScreenSize();
-            this.screenWidth = size.width;
-            this.screenHeight = size.height;
-            console.error(`Detected Screen Size: ${this.screenWidth}x${this.screenHeight}`);
-        } catch (e) {
-            console.error("Failed to get screen size via RobotJS:", e);
-        }
-    }
-
     setupSocketIO() {
         this.io.on('connection', (socket) => {
-            console.error('Client connected');
+            console.error('Viewport client connected');
 
-            if (!this.isStreaming) {
-                this.isStreaming = true;
-                this.streamLoop();
-            }
-
-            socket.on('disconnect', () => {
-                console.error('Client disconnected');
-                if (this.io.engine.clientsCount === 0) {
-                    this.isStreaming = false;
-                }
+            socket.on('input', async (data) => {
+                await this.handleInput(data);
             });
 
-            socket.on('input', (data) => this.handleInput(data));
+            const streamLoop = async () => {
+                if (socket.connected) {
+                    try {
+                        const base64 = await this.captureScreen();
+                        socket.emit('frame', base64);
+                    } catch (e) {
+                        console.error("Stream error:", e);
+                    }
+                    setTimeout(streamLoop, 1000 / this.config.fps);
+                }
+            };
+            streamLoop();
         });
     }
 
-    handleInput(data) {
-        try {
-            const { type, x, y, dx, dy, button, key } = data;
-            const sex = x !== undefined ? Math.round(x * this.screenWidth) : 0;
-            const sey = y !== undefined ? Math.round(y * this.screenHeight) : 0;
+    async captureScreen() {
+        const img = await screenshot({ format: 'jpg' });
+        const buffer = await sharp(img)
+            .resize(this.config.targetWidth)
+            .jpeg({ quality: this.config.jpegQuality })
+            .toBuffer();
+        return buffer.toString('base64');
+    }
 
-            switch (type) {
-                case 'mousemove_relative':
-                    const mouse = robot.getMousePos();
-                    robot.moveMouse(mouse.x + dx, mouse.y + dy);
-                    break;
-                case 'click_teleport':
-                    robot.moveMouse(sex, sey);
-                    setTimeout(() => {
-                        robot.mouseToggle('down', button || 'left');
-                        setTimeout(() => {
-                            robot.mouseToggle('up', button || 'left');
-                        }, 50);
-                    }, 50);
-                    break;
-                case 'mousedown':
-                    robot.mouseToggle('down', button || 'left');
-                    break;
-                case 'mouseup':
-                    robot.mouseToggle('up', button || 'left');
-                    break;
-                case 'keytap':
-                    if (key) robot.keyTap(key);
-                    break;
-            }
-        } catch (err) {
-            console.error("Input error:", err);
+    async getMonitors() {
+        return await screenshot.listDisplays();
+    }
+
+    async handleMouseClick({ x, y, button = 'left' }) {
+        const { width, height } = robot.getScreenSize();
+        const targetX = Math.round(x <= 1 ? x * width : x);
+        const targetY = Math.round(y <= 1 ? y * height : y);
+        robot.moveMouse(targetX, targetY);
+        await new Promise(r => setTimeout(r, 50));
+        robot.mouseClick(button);
+    }
+
+    async handleMouseDrag({ x, y }) {
+        const { width, height } = robot.getScreenSize();
+        const targetX = x <= 1 ? x * width : x;
+        const targetY = y <= 1 ? y * height : y;
+        robot.dragMouse(targetX, targetY);
+    }
+
+    async handleKeyType({ text, key }) {
+        if (text) {
+            robot.typeString(text);
+        }
+        if (key) {
+            robot.keyTap(key);
         }
     }
 
-    async streamLoop() {
-        if (!this.isStreaming) return;
+    async handleInput(data) {
+        const { width, height } = robot.getScreenSize();
 
-        try {
-            const start = Date.now();
-            const imgBuffer = await screenshot({ format: 'jpg' });
-
-            const processedBuffer = await sharp(imgBuffer)
-                .resize({ width: this.config.targetWidth })
-                .jpeg({ quality: this.config.jpegQuality })
-                .toBuffer();
-
-            this.io.emit('frame', processedBuffer.toString('base64'));
-
-            const duration = Date.now() - start;
-            const delay = Math.max(0, (1000 / this.config.fps) - duration);
-            if (this.isStreaming) setTimeout(() => this.streamLoop(), delay);
-        } catch (err) {
-            console.error("Stream error:", err);
-            if (this.isStreaming) setTimeout(() => this.streamLoop(), 1000);
+        if (data.type === 'click' || data.type === 'click_teleport') {
+            // Teleport + click
+            await this.handleMouseClick(data);
+        } else if (data.type === 'move') {
+            robot.moveMouse(data.x * width, data.y * height);
+        } else if (data.type === 'mousemove_relative') {
+            // Relative movement for pointer lock mode
+            const pos = robot.getMousePos();
+            robot.moveMouse(pos.x + data.dx, pos.y + data.dy);
+        } else if (data.type === 'mousedown') {
+            robot.mouseToggle('down', data.button || 'left');
+        } else if (data.type === 'mouseup') {
+            robot.mouseToggle('up', data.button || 'left');
+        } else if (data.type === 'keydown' || data.type === 'keytap') {
+            await this.handleKeyType({ key: data.key });
         }
     }
 
     async start() {
-        // Start MCP Server (Stdio)
         await this.mcpServer.start();
-
-        // Start HTTP Server
         this.httpServer.listen(this.config.port, () => {
             console.error(`ViewPort Server running at http://localhost:${this.config.port}`);
         });
-
-        // Start Tray
         this.trayManager.start();
     }
 
     stop() {
         console.error("Shutting down...");
-        this.isStreaming = false;
         this.httpServer.close();
-        process.exit(0);
     }
 }
 
 const server = new AgentViewportServer();
-server.start().catch(console.error);
+server.start();
