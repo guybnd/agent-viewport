@@ -1,6 +1,6 @@
 # AgentViewport
 
-**AgentViewport** is a bridge tool that turns your local desktop into a browser-based viewport and an MCP (Model Context Protocol) Server. It enables AI agents (like Claude Desktop, Cursor, or custom agents) to "see" your screen and interact with it (click, type, drag) via a standardized protocol.
+**AgentViewport** is a bridge tool that turns your local desktop into a browser-based viewport and an MCP (Model Context Protocol) Server. It enables AI agents (like Claude Desktop, Cursor, or custom agents) to "see" your screen and interact with it (click, type, drag) via a standardized protocol using their embedded browser tools.
 
 ![AgentViewport Icon](icon.png)
 
