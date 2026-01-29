@@ -102,6 +102,9 @@ You can modify:
 
 ## Security & Privacy
 
+> [!CAUTION]
+> **Use with Caution**: Giving an AI agent access to your screen and input controls (mouse/keyboard) is a high-privilege action. Always monitor the agent's activity in real-time. Do not leave the agent unattended while it has control over your session.
+
 - **Local Execution**: The server binds to `localhost:3000` by default. It is not accessible from the internet unless you explicitly use a tunnel or port forwarding.
 - **MCP Security**: The MCP server communicates via `stdio` (Standard Input/Output), which is a local-only transport managed by your AI client (e.g., Claude Desktop).
 - **No Cloud Processing**: Screenshots and input data are processed entirely on your machine. No data is sent to external servers by this tool.
