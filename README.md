@@ -10,7 +10,13 @@
 - **Low Latency Viewport**: Streams your desktop to `http://localhost:3000` for remote viewing or debugging.
 - **System Tray Integration**: Background execution with a convenient tray menu.
 - **Safety Mode**: Emergency kill-switch (defaults to Tray Exit).
-- **Portable**: Can be built into a single `.exe` file.
+- **Portable**: Can be built into a standalone `.exe` with bundled dependencies.
+
+## Prerequisites
+
+- **Node.js 20+** - Download from [nodejs.org](https://nodejs.org/)
+- **Windows 10/11** - Currently Windows-only (uses native Windows APIs for screen capture and input simulation)
+- **npm** - Comes with Node.js
 
 ## Installation
 
@@ -131,6 +137,16 @@ You can modify:
 - **MCP Security**: The MCP server communicates via `stdio` (Standard Input/Output), which is a local-only transport managed by your AI client (e.g., Claude Desktop).
 - **No Cloud Processing**: Screenshots and input data are processed entirely on your machine. No data is sent to external servers by this tool.
 - **Transparency**: This project is open-source. You can inspect `server.js` to see exactly how screenshots are captured and how mouse/keyboard inputs are handled.
+
+## Troubleshooting
+
+| Issue | Solution |
+| :--- | :--- |
+| **Port 3000 in use** | Change `port` in `%AppData%\AgentViewport\agent-viewport.config.json` or close the conflicting app |
+| **Clicks not registering** | Make sure you're clicking inside the video area, not the letterboxed margins |
+| **Build fails with EPERM** | Close the running AgentViewport.exe (via tray or Task Manager) before rebuilding |
+| **Native module errors** | Delete `node_modules` and `dist`, then run `npm install` and rebuild |
+| **Tray icon not appearing** | Check the system tray overflow area (^ arrow in taskbar) |
 
 ## Acknowledgements
 
