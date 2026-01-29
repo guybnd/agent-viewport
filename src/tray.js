@@ -2,6 +2,8 @@
 import SysTray from 'systray2';
 import open from 'open';
 import { uIOhook, UiohookKey } from 'uiohook-napi';
+import fs from 'fs';
+import path from 'path';
 
 export class TrayManager {
     constructor(config, onExit) {
@@ -32,9 +34,19 @@ export class TrayManager {
             enabled: true
         };
 
+        let iconBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='; // Default Red Dot
+        try {
+            const iconPath = path.join(process.cwd(), 'icon.png');
+            if (fs.existsSync(iconPath)) {
+                iconBase64 = fs.readFileSync(iconPath).toString('base64');
+            }
+        } catch (e) {
+            console.error("Failed to load icon.png, using default.", e);
+        }
+
         this.tray = new SysTray.default({
             menu: {
-                icon: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', // Base64 red dot
+                icon: iconBase64,
                 title: "AgentViewport",
                 tooltip: "AgentViewport",
                 items: [itemLaunch, itemConfig, itemExit]

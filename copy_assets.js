@@ -78,4 +78,11 @@ if (fs.existsSync(uiohookSrc)) {
     copyFile(uiohookSrc, uiohookDist);
 }
 
+// Copy icon.png
+const iconSrc = path.join(__dirname, 'icon.png');
+const iconDist = path.join(distDir, 'icon.png');
+if (fs.existsSync(iconSrc)) {
+    copyFile(iconSrc, iconDist);
+}
+
 console.log("Copy complete.");
