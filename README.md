@@ -19,7 +19,7 @@
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/yourusername/agent-viewport.git
+    git clone https://github.com/guybnd/agent-viewport.git
     cd agent-viewport
     ```
 
@@ -35,18 +35,40 @@
     npm start
     ```
 
-### Option B: Build Executable
+### Option B: Build Standalone Executable
 
-1. Run the build script:
+1. Install dependencies (if not already done):
+
+    ```bash
+    npm install
+    ```
+
+2. Build the executable:
 
     ```bash
     npm run build
     ```
 
-    This will generate `dist/AgentViewport.exe`.
-2. Run `dist/AgentViewport.exe`.
+3. Copy runtime dependencies:
 
-*Note: The first run might require Administrator privileges depending on where you place the executable, as it creates a config file in `%AppData%`.*
+    ```bash
+    node copy_assets.js
+    ```
+
+4. Run from the `dist` folder:
+
+    ```bash
+    .\dist\AgentViewport.exe
+    ```
+
+> [!IMPORTANT]
+> The `dist` folder contains three items that **must stay together**:
+>
+> - `AgentViewport.exe` - The main executable
+> - `vendor/` - Native modules required at runtime
+> - `icon.png` - Tray icon
+>
+> If you move the executable, move the entire `dist` folder contents together.
 
 ## Configuration
 
