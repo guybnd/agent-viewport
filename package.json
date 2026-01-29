@@ -1,0 +1,38 @@
+{
+    "name": "agent-viewport",
+    "version": "1.0.0",
+    "description": "A bridge to capture desktop and serve it to a browser viewport",
+    "main": "server.js",
+    "type": "module",
+    "bin": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "build": "pkg . --targets node18-win-x64 --output dist/AgentViewport.exe",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "pkg": {
+        "assets": [
+            "public/**/*",
+            "node_modules/robotjs/build/Release/robotjs.node",
+            "node_modules/sharp/**/*",
+            "node_modules/uiohook-napi/build/Release/uiohook.node"
+        ],
+        "outputPath": "dist"
+    },
+    "dependencies": {
+        "@hurdlegroup/robotjs": "^0.12.3",
+        "@modelcontextprotocol/sdk": "^1.0.1",
+        "express": "^4.18.2",
+        "open": "^10.0.3",
+        "screenshot-desktop": "^1.15.0",
+        "sharp": "^0.33.2",
+        "socket.io": "^4.7.4",
+        "systray2": "^2.1.3",
+        "uiohook-napi": "^1.5.4"
+    },
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "pkg": "^5.8.1"
+    }
+}

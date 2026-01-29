@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+dist/
+build/
+
+# Config (User specific)
+src/config.json
+vividview.config.json
+
+# System
+.DS_Store
+Thumbs.db
+
+# Brain/Agent artifacts (if located inside repo during dev)
+.gemini/

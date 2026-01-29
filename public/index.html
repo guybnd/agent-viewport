@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Viewport</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: sans-serif;
+        }
+
+        #viewport-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #viewport {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Custom cursor for Click-Only mode */
+        #cursor-overlay {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            color: white;
+            border-radius: 5px;
+            z-index: 200;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 5px 10px;
+            background: #444;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 3px;
+        }
+
+        button.active {
+            background: #00cc00;
+            border-color: #00ff00;
+        }
+
+        .info {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="controls">
+        <div>
+            <button id="btn-click-mode" class="active">Click-Only Mode</button>
+            <button id="btn-lock-mode">Immersive (Lock)</button>
+        </div>
+        <div class="info" id="mode-info">
+            Move mouse to aim, Click to execute.
+        </div>
+    </div>
+
+    <div id="viewport-container">
+        <img id="viewport" src="" alt="Waiting for stream..." draggable="false" />
+        <div id="cursor-overlay"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+
+</html>
