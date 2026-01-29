@@ -100,6 +100,24 @@ You can modify:
 | `mouse_drag` | Drag from current pos to x, y. | `x`, `y` |
 | `key_type` | Type text or press keys. | `text`, `key` |
 
+## Security & Privacy
+
+- **Local Execution**: The server binds to `localhost:3000` by default. It is not accessible from the internet unless you explicitly use a tunnel or port forwarding.
+- **MCP Security**: The MCP server communicates via `stdio` (Standard Input/Output), which is a local-only transport managed by your AI client (e.g., Claude Desktop).
+- **No Cloud Processing**: Screenshots and input data are processed entirely on your machine. No data is sent to external servers by this tool.
+- **Transparency**: This project is open-source. You can inspect `server.js` to see exactly how screenshots are captured and how mouse/keyboard inputs are handled.
+
+## Acknowledgements
+
+This project is made possible by these incredible open-source libraries:
+
+- [RobotJS](https://github.com/octalmage/robotjs) - Desktop automation.
+- [Model Context Protocol SDK](https://github.com/modelcontextprotocol/sdk) - MCP server framework.
+- [Sharp](https://github.com/lovell/sharp) - High-performance image processing.
+- [screenshot-desktop](https://github.com/simon024/screenshot-desktop) - Cross-platform screenshots.
+- [Socket.io](https://socket.io/) - Real-time viewport streaming.
+- [SysTray2](https://github.com/mrazardar/systray2) - System tray integration.
+
 ## License
 
 MIT
