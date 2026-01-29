@@ -9,7 +9,7 @@ build/
 
 # Config (User specific)
 src/config.json
-vividview.config.json
+agent-viewport.config.json
 
 # System
 .DS_Store

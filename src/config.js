@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 
 const CONFIG_DIR = path.join(os.homedir(), 'AppData', 'Roaming', 'AgentViewport');
-const CONFIG_PATH = path.join(CONFIG_DIR, 'vividview.config.json');
+const CONFIG_PATH = path.join(CONFIG_DIR, 'agent-viewport.config.json');
 
 const DEFAULTS = {
     port: 3000,

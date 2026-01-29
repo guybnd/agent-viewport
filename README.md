@@ -82,7 +82,7 @@ To let Claude "see" your computer, add AgentViewport to your `claude_desktop_con
 
 ### Application Config
 
-A configuration file is automatically created at `%AppData%\AgentViewport\vividview.config.json`.
+A configuration file is automatically created at `%AppData%\AgentViewport\agent-viewport.config.json`.
 You can modify:
 
 - `port`: Web server port (Default: 3000)
